@@ -1,0 +1,21 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.game-container {
+  background-color: antiquewhite;
+}
+
+.row {
+  height: 30px;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  outline: 1px dashed black;
+  display: inline-block;
+}
