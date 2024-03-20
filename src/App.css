@@ -18,8 +18,13 @@
   height: 30px;
   outline: 1px dashed black;
   display: inline-block;
+  transition: all 0.1s;
 }
 
 .snake-cell {
   background-color: green;
+}
+
+.food-cell {
+  background-color: red;
 }

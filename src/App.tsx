@@ -5,7 +5,9 @@ import {
   Direction,
   getCordsInDirection,
   getDirection,
+  getGrowthNodeCords,
   isOutOfBound,
+  randomNumberForFood,
 } from "./utils/helpers";
 
 const size = 10;
@@ -30,9 +32,8 @@ function App() {
   const [snake, setSnake] = useState(
     new LinkList({ cellValue: 44, col: 3, row: 4 })
   );
-  const [direction, setDirection] = useState<Direction | undefined>(
-    Direction.RIGHT
-  );
+  const [foodCell, setFoodCell] = useState(48);
+  const [direction, setDirection] = useState<Direction>(Direction.RIGHT);
 
   useEffect(() => {
     document.addEventListener("keydown", (e) => {
@@ -40,6 +41,51 @@ function App() {
       if (newDirection) setDirection(() => newDirection);
     });
   }, []);
+  const handleFoodConsumption = useCallback(
+    (newSnakeCells: Set<number>) => {
+      const maxValue = size * size;
+      let nextFoodCell: number;
+      while (true) {
+        nextFoodCell = randomNumberForFood(1, maxValue);
+        if (newSnakeCells.has(nextFoodCell) || foodCell === nextFoodCell) {
+          continue;
+        }
+        break;
+      }
+      setFoodCell(() => nextFoodCell);
+    },
+    [foodCell]
+  );
+
+  const growSnake = useCallback(
+    (newSnakeCells: Set<number>) => {
+      const growthNodeCords = getGrowthNodeCords(snake.tail, direction);
+      if (
+        isOutOfBound({
+          row: growthNodeCords.row,
+          col: growthNodeCords.col,
+          board,
+        })
+      ) {
+        return;
+      }
+
+      const newTailCell = board[growthNodeCords.row][growthNodeCords.col];
+
+      const newTail = new LinkListNode({
+        cellValue: newTailCell,
+        col: growthNodeCords.col,
+        row: growthNodeCords.row,
+      });
+
+      const currentTail = snake.tail;
+      snake.tail = newTail;
+      snake.tail.next = currentTail;
+
+      newSnakeCells.add(newTailCell);
+    },
+    [board, direction, snake]
+  );
 
   const moveSnake = useCallback(() => {
     const currentHeadCord = {
@@ -48,16 +94,14 @@ function App() {
       // cellValue: snake.head.value.cellValue,
     };
     const nextHeadCord = getCordsInDirection(currentHeadCord, direction);
-    console.log(nextHeadCord, "nextHeadCord");
     if (isOutOfBound({ row: nextHeadCord.row, col: nextHeadCord.col, board })) {
-      console.log("gameOver");
+      // console.log("gameOver");
       return;
     }
 
     const nextHeadCellValue = board[nextHeadCord.row][nextHeadCord.col];
-    console.log(nextHeadCellValue, "nextHeadCellValue");
     if (snakeCells.has(nextHeadCellValue)) {
-      console.log(snakeCells, "gameOver");
+      // console.log(snakeCells, "gameOver");
       return;
     }
 
@@ -80,11 +124,23 @@ function App() {
     } else {
       snake.tail = snake.tail.next;
     }
-    console.log(snakeCells);
+    if (foodCell === nextHeadCellValue) {
+      growSnake(newSnakeCells);
+      handleFoodConsumption(newSnakeCells);
+    }
     setSnakeCells(() => newSnakeCells);
-  }, [board, direction, snake, snakeCells]);
+  }, [
+    board,
+    direction,
+    snake,
+    snakeCells,
+    foodCell,
+    handleFoodConsumption,
+    growSnake,
+  ]);
+
   useEffect(() => {
-    const interval = setInterval(moveSnake, 500);
+    const interval = setInterval(moveSnake, 100);
     // moveSnake();
     return () => clearInterval(interval);
   }, [moveSnake]);
@@ -97,7 +153,7 @@ function App() {
               key={cellIdx}
               className={`cell ${
                 snakeCells.has(cellValue) ? "snake-cell" : ""
-              }`}
+              } ${foodCell === cellValue ? "food-cell" : ""}`}
             >
               {cellValue}
             </div>
